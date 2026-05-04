@@ -46,7 +46,7 @@ RUN if [ "$BROWSER" = "chrome" ] || [ "$BROWSER" = "chrome-beta" ]; then \
 
 # Copy app files
 COPY api-server.js session-recorder.js ./
-COPY start-session.sh end-session.sh ./
+COPY *.sh ./
 RUN chmod +x *.sh
 
 # Copy UI
@@ -55,13 +55,16 @@ COPY ui/ ./ui/
 # Copy nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
 
+# Seed Chrome profiles (cookies, local storage). Empty by default —
+# downstream forks/users can drop profile templates in profiles-seed/.
+COPY profiles-seed/ /app/profiles/
+
 # Create directories
-RUN mkdir -p /app/sessions /app/recordings /app/profiles
+RUN mkdir -p /app/sessions /app/recordings
 
 # Environment
 ENV DISPLAY=:99
 ENV PORT=8080
-ENV AUTH_TOKEN=""
 ENV VNC_BASE_URL=""
 
 # Expose ports

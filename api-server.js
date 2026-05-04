@@ -25,19 +25,14 @@ const BASE_DIR = __dirname;
 const SESSIONS_DIR = path.join(BASE_DIR, 'sessions');
 const RECORDINGS_DIR = path.join(BASE_DIR, 'recordings');
 
-// Auth token (same as CDP)
-const AUTH_TOKEN = process.env.AUTH_TOKEN || '4557b80990c053660af41594ff39a9919e439b96cf3851142284ebb5eeff01db';
-
-function checkAuth(req) {
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith('Bearer ')) return false;
-  return auth.slice(7) === AUTH_TOKEN;
-}
+// Note: bearer-token auth removed for the local pivot. The container is bound
+// to 127.0.0.1 in docker-compose, so the API is only reachable from the host.
+// If this service is ever exposed beyond loopback, restore an auth check here.
 
 function addCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
 function jsonResponse(res, status, data) {
@@ -303,12 +298,6 @@ async function handleRequest(req, res) {
   if (method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
-    return;
-  }
-
-  // Auth check (except for health)
-  if (pathname !== '/health' && !checkAuth(req)) {
-    jsonResponse(res, 401, { error: 'Unauthorized' });
     return;
   }
 

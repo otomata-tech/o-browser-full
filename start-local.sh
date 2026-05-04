@@ -11,7 +11,7 @@ echo "=== Browser Local ==="
 pkill -f "node.*api-server" 2>/dev/null || true
 mkdir -p sessions recordings
 
-AUTH_TOKEN=local-dev-token node api-server.js &
+node api-server.js &
 
 echo "  API:  http://localhost:${PORT}"
 echo "  VNC:  http://localhost:6080/vnc.html (quand une session est active)"

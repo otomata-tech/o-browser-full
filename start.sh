@@ -3,7 +3,7 @@
 set -e
 
 CDP_PORT=9222
-CHROME_DATA_DIR=/tmp/chrome-o-browser
+CHROME_DATA_DIR=/tmp/chrome
 
 pkill -f "chrome.*remote-debugging-port" 2>/dev/null || true
 sleep 1

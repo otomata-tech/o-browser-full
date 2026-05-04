@@ -94,6 +94,9 @@ NOVNC_PID=$!
 sleep 1
 
 # 4. Chrome
+# Clean stale locks from previous crash (prevents "Trace/breakpoint trap")
+rm -f "${CHROME_DATA_DIR}/SingletonLock" "${CHROME_DATA_DIR}/SingletonSocket" "${CHROME_DATA_DIR}/SingletonCookie"
+
 # --ozone-platform=x11 forces Chrome into Xvfb on bare-metal (not needed in Docker)
 CHROME_OZONE_FLAG=""
 [ ! -f /.dockerenv ] && CHROME_OZONE_FLAG="--ozone-platform=x11"
