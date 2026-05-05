@@ -1,30 +1,52 @@
 #!/usr/bin/env bash
-# o-browser — small wrapper around docker compose for o-browser-full.
+# o-browser — entry point.
 #
-# Acts on the install rooted at $O_BROWSER_HOME (default: ~/.o-browser-full),
-# created by install.sh. Idempotent.
+# Container lifecycle commands run as bash inline; browser actions, session
+# management and extensions are routed to cli/o-browser.ts via tsx.
 set -euo pipefail
 
+# Resolve $0 through any chain of symlinks (portable across Linux + macOS).
+SCRIPT="$0"
+while [ -L "$SCRIPT" ]; do
+  LINK_DIR="$(cd "$(dirname "$SCRIPT")" && pwd)"
+  SCRIPT="$(readlink "$SCRIPT")"
+  [[ "$SCRIPT" != /* ]] && SCRIPT="$LINK_DIR/$SCRIPT"
+done
+REPO_DIR="$(cd "$(dirname "$SCRIPT")/.." && pwd)"
+
 HOME_DIR="${O_BROWSER_HOME:-$HOME/.o-browser-full}"
-HEALTH_URL="${O_BROWSER_URL:-http://localhost:8080}/health"
+BASE_URL="${O_BROWSER_URL:-http://localhost:8080}"
+HEALTH_URL="$BASE_URL/health"
 
 usage() {
   cat <<EOF
 Usage: o-browser <command>
 
-Commands:
-  start     Start the container (docker compose up -d)
-  stop      Stop and remove the container
-  restart   stop + start
-  status    Hit /health, print "ok" or "down"
-  logs      Follow container logs (Ctrl-C to exit)
-  pull      Pull the latest image
-  shell     Drop a bash shell inside the container
-  home      Print the install directory
+Container:
+  start         Start the container (docker compose up -d)
+  stop          Stop and remove the container
+  restart       stop + start
+  status        Hit /health, print "ok" or "down"
+  logs          Follow container logs (Ctrl-C to exit)
+  pull          Pull the latest image
+  shell         Drop a bash shell inside the container
+  home          Print the install directory
+
+Session / browser actions / extensions:
+  session start|stop|current      Browser session lifecycle
+  vnc                              Print VNC viewer URL
+  nav | back | forward | reload    Navigation
+  read | dom | screenshot          Read DOM / save screenshots
+  url | title
+  click | type | press | wait      Interaction (Playwright via CDP)
+  extension install|list|remove|upgrade
+  <ext> <args>                     Run an installed extension
+
+Run \`o-browser help-cli\` for the complete TS-side help.
 
 Env:
   O_BROWSER_HOME   install directory (default: ~/.o-browser-full)
-  O_BROWSER_URL    base URL for status check (default: http://localhost:8080)
+  O_BROWSER_URL    base URL for the container (default: http://localhost:8080)
 EOF
 }
 
@@ -35,8 +57,14 @@ require_home() {
   fi
 }
 
+run_ts() {
+  cd "$REPO_DIR"
+  exec npx --no-install tsx cli/o-browser.ts "$@"
+}
+
 cmd="${1:-}"
 case "$cmd" in
+  # --- Container lifecycle (inline bash) ---
   start)   require_home; cd "$HOME_DIR"; docker compose up -d ;;
   stop)    require_home; cd "$HOME_DIR"; docker compose down ;;
   restart) require_home; cd "$HOME_DIR"; docker compose down; docker compose up -d ;;
@@ -53,5 +81,7 @@ case "$cmd" in
   shell)   docker exec -it browser bash ;;
   home)    echo "$HOME_DIR" ;;
   ""|-h|--help|help) usage ;;
-  *) echo "o-browser: unknown command '$cmd'"; echo; usage; exit 1 ;;
+  help-cli) shift; run_ts help ;;
+  # --- Everything else: route to TS dispatcher ---
+  *) run_ts "$@" ;;
 esac

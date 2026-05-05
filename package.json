@@ -1,14 +1,25 @@
 {
   "name": "o-browser",
   "version": "1.0.0",
-  "description": "Remote browser with VNC, CDP and session management",
+  "description": "Local stealth Chrome with VNC, CDP, recordings, plus a CLI and extension system",
   "private": true,
+  "bin": {
+    "o-browser": "./bin/o-browser"
+  },
   "scripts": {
     "dev": "PORT=3100 npx serve .",
-    "start": "node api-server.js"
+    "start": "node api-server.js",
+    "cli": "tsx cli/o-browser.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@rrweb/record": "^2.0.0-alpha.20",
+    "playwright-core": "^1.49.1",
     "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.2"
   }
 }
