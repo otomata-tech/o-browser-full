@@ -24,39 +24,18 @@ const recHarStatus = document.getElementById('rec-har-status');
 const recHarSize = document.getElementById('rec-har-size');
 const recHarEntries = document.getElementById('rec-har-entries');
 const recHarDownload = document.getElementById('rec-har-download');
+const recRrwebStatus = document.getElementById('rec-rrweb-status');
+const recRrwebSize = document.getElementById('rec-rrweb-size');
+const recRrwebEvents = document.getElementById('rec-rrweb-events');
+const recRrwebDownload = document.getElementById('rec-rrweb-download');
 const recScreenshotsCount = document.getElementById('rec-screenshots-count');
 const screenshotsList = document.getElementById('screenshots-list');
-
-// Get token from URL or prompt
-function getToken() {
-  const params = new URLSearchParams(window.location.search);
-  let token = params.get('token');
-  if (!token) {
-    token = localStorage.getItem('browser_token');
-  }
-  if (!token) {
-    token = prompt('Enter access token:');
-    if (token) {
-      localStorage.setItem('browser_token', token);
-    }
-  }
-  return token;
-}
-
-const TOKEN = getToken();
-
-if (!TOKEN) {
-  statusText.textContent = 'No token provided';
-  statusDot.classList.add('error');
-  btnStart.disabled = true;
-}
 
 // API helpers
 async function api(endpoint, options = {}) {
   const res = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers: {
-      'Authorization': `Bearer ${TOKEN}`,
       'Content-Type': 'application/json',
       ...options.headers,
     },
@@ -103,10 +82,13 @@ function updateUI() {
     recVideoStatus.classList.remove('done');
     recHarStatus.classList.add('recording');
     recHarStatus.classList.remove('done');
+    recRrwebStatus.classList.add('recording');
+    recRrwebStatus.classList.remove('done');
 
     // Hide download links during recording
     recVideoDownload.classList.add('hidden');
     recHarDownload.classList.add('hidden');
+    recRrwebDownload.classList.add('hidden');
   } else {
     statusDot.classList.remove('active');
     statusText.textContent = 'No active session';
@@ -126,6 +108,8 @@ function updateUI() {
     recVideoSize.textContent = '-';
     recHarSize.textContent = '-';
     recHarEntries.textContent = '';
+    recRrwebSize.textContent = '-';
+    recRrwebEvents.textContent = '';
     recScreenshotsCount.textContent = '0 captures';
     screenshotsList.innerHTML = '';
   }
@@ -139,11 +123,12 @@ function formatTime(isoString) {
 
 // VNC connection via iframe
 function connectVNC() {
-  if (!TOKEN) return;
-
-  const host = window.location.host;
-  const vncPath = encodeURIComponent(`vnc/websockify?token=${TOKEN}`);
-  const vncUrl = `/vnc/vnc.html?autoconnect=true&resize=scale&host=${host}&port=443&path=${vncPath}&encrypt=1`;
+  const isHttps = window.location.protocol === 'https:';
+  const host = window.location.hostname;
+  const port = isHttps ? '443' : (window.location.port || '80');
+  const encrypt = isHttps ? '1' : '0';
+  const vncPath = encodeURIComponent('vnc/websockify');
+  const vncUrl = `/vnc/vnc.html?autoconnect=true&resize=scale&host=${host}&port=${port}&path=${vncPath}&encrypt=${encrypt}`;
 
   vncIframe.src = vncUrl;
   console.log('VNC iframe src:', vncUrl);
@@ -288,6 +273,8 @@ function showCompletedSession(session) {
   recVideoStatus.classList.add('done');
   recHarStatus.classList.remove('recording');
   recHarStatus.classList.add('done');
+  recRrwebStatus.classList.remove('recording');
+  recRrwebStatus.classList.add('done');
 
   // Show download links
   const baseUrl = '/api';
@@ -300,6 +287,10 @@ function showCompletedSession(session) {
       recHarSize.textContent = formatBytes(session.recordings.har_size);
       recHarEntries.textContent = `(${session.recordings.har_entries || 0} req)`;
     }
+    if (session.recordings.rrweb_size) {
+      recRrwebSize.textContent = formatBytes(session.recordings.rrweb_size);
+      recRrwebEvents.textContent = `(${session.recordings.rrweb_events || 0} events)`;
+    }
   }
 
   recVideoDownload.href = `${baseUrl}/recordings/${session.id}/screencast.mp4`;
@@ -307,6 +298,9 @@ function showCompletedSession(session) {
 
   recHarDownload.href = `${baseUrl}/recordings/${session.id}/network.har`;
   recHarDownload.classList.remove('hidden');
+
+  recRrwebDownload.href = `${baseUrl}/recordings/${session.id}/rrweb-events.json`;
+  recRrwebDownload.classList.remove('hidden');
 }
 
 // Take screenshot

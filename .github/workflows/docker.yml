@@ -9,10 +9,11 @@ on:
       - 'Dockerfile'
       - 'nginx.conf'
       - 'package.json'
+      - 'ui/**'
       - '.github/workflows/docker.yml'
 
 env:
-  IMAGE: ghcr.io/alexislaporte/o-browser-server
+  IMAGE: ghcr.io/otomata-tech/o-browser-full
 
 jobs:
   build:

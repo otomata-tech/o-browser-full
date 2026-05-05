@@ -67,6 +67,18 @@ VIDEO_SIZE=0
 if [ -f "${RECORDING_DIR}/screencast.mp4" ]; then
     VIDEO_SIZE=$(stat -c%s "${RECORDING_DIR}/screencast.mp4" 2>/dev/null || echo 0)
 fi
+HAR_SIZE=0
+HAR_ENTRIES=0
+if [ -f "${RECORDING_DIR}/network.har" ]; then
+    HAR_SIZE=$(stat -c%s "${RECORDING_DIR}/network.har" 2>/dev/null || echo 0)
+    HAR_ENTRIES=$(jq '.log.entries | length' "${RECORDING_DIR}/network.har" 2>/dev/null || echo 0)
+fi
+RRWEB_SIZE=0
+RRWEB_EVENTS=0
+if [ -f "${RECORDING_DIR}/rrweb-events.json" ]; then
+    RRWEB_SIZE=$(stat -c%s "${RECORDING_DIR}/rrweb-events.json" 2>/dev/null || echo 0)
+    RRWEB_EVENTS=$(jq 'length' "${RECORDING_DIR}/rrweb-events.json" 2>/dev/null || echo 0)
+fi
 
 # Write final session file
 SESSION_FILE="${SESSION_DIR}/${SESSION_ID}.json"
@@ -79,7 +91,11 @@ cat > "${SESSION_FILE}" << EOF
   "end_reason": "${REASON}",
   "recordings": {
     "dir": "${RECORDING_DIR}",
-    "screencast_size": ${VIDEO_SIZE}
+    "screencast_size": ${VIDEO_SIZE},
+    "har_size": ${HAR_SIZE},
+    "har_entries": ${HAR_ENTRIES},
+    "rrweb_size": ${RRWEB_SIZE},
+    "rrweb_events": ${RRWEB_EVENTS}
   },
   "status": "completed"
 }

@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# o-browser — small wrapper around docker compose for o-browser-full.
+#
+# Acts on the install rooted at $O_BROWSER_HOME (default: ~/.o-browser-full),
+# created by install.sh. Idempotent.
+set -euo pipefail
+
+HOME_DIR="${O_BROWSER_HOME:-$HOME/.o-browser-full}"
+HEALTH_URL="${O_BROWSER_URL:-http://localhost:8080}/health"
+
+usage() {
+  cat <<EOF
+Usage: o-browser <command>
+
+Commands:
+  start     Start the container (docker compose up -d)
+  stop      Stop and remove the container
+  restart   stop + start
+  status    Hit /health, print "ok" or "down"
+  logs      Follow container logs (Ctrl-C to exit)
+  pull      Pull the latest image
+  shell     Drop a bash shell inside the container
+  home      Print the install directory
+
+Env:
+  O_BROWSER_HOME   install directory (default: ~/.o-browser-full)
+  O_BROWSER_URL    base URL for status check (default: http://localhost:8080)
+EOF
+}
+
+require_home() {
+  if [[ ! -f "$HOME_DIR/docker-compose.yml" ]]; then
+    echo "o-browser: install dir not found at $HOME_DIR — run install.sh first" >&2
+    exit 1
+  fi
+}
+
+cmd="${1:-}"
+case "$cmd" in
+  start)   require_home; cd "$HOME_DIR"; docker compose up -d ;;
+  stop)    require_home; cd "$HOME_DIR"; docker compose down ;;
+  restart) require_home; cd "$HOME_DIR"; docker compose down; docker compose up -d ;;
+  status)
+    if curl -fs "$HEALTH_URL" >/dev/null 2>&1; then
+      echo "ok ($HEALTH_URL)"
+    else
+      echo "down ($HEALTH_URL)"
+      exit 1
+    fi
+    ;;
+  logs)    require_home; cd "$HOME_DIR"; docker compose logs -f --tail=200 ;;
+  pull)    require_home; cd "$HOME_DIR"; docker compose pull ;;
+  shell)   docker exec -it browser bash ;;
+  home)    echo "$HOME_DIR" ;;
+  ""|-h|--help|help) usage ;;
+  *) echo "o-browser: unknown command '$cmd'"; echo; usage; exit 1 ;;
+esac
