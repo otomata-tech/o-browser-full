@@ -1,4 +1,4 @@
-# o-browser-server — Remote Chrome Service
+# o-browser-full — Remote Chrome Service
 
 Remote Chrome with API, VNC, CDP proxy, and session recording.
 The Python client library is in `o-browser` (separate package).
@@ -13,7 +13,7 @@ The Python client library is in `o-browser` (separate package).
 ## Structure
 
 ```
-o-browser-server/
+o-browser-full/
 ├── api-server.js           # HTTP API (sessions, recordings, screenshots)
 ├── session-recorder.js     # rrweb DOM + HAR + browser state via CDP
 ├── start-session.sh        # Launches Chrome + Xvfb + VNC + ffmpeg + recorder
@@ -31,7 +31,7 @@ o-browser-server/
 ```bash
 # Docker
 docker compose up -d
-docker build -t o-browser-server .
+docker build -t o-browser-full .
 
 # Local (bare-metal, requires Chrome + Xvfb + VNC installed)
 ./start-session.sh [workflow] [profile]

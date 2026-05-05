@@ -1,54 +1,67 @@
-# o-browser-server
+# o-browser-full
 
-Remote Chrome service: API, VNC viewer, CDP proxy, session recording (rrweb + HAR + screencast). Sister project of [`o-browser`](https://github.com/otomata-tech/o-browser) (Python client lib).
+The full local browser stack: stealth Chrome + Xvfb + VNC viewer + CDP proxy + session recording (rrweb + HAR + screencast). Wraps everything needed to drive a real Chrome from another process (Playwright via CDP) or a human (via VNC), without instrumentation that fingerprints as a bot.
 
-## Quick start
+Sister project of [`o-browser`](https://github.com/otomata-tech/o-browser), the lightweight Python client lib. Use `o-browser` when a local Chrome on your machine is enough; use `o-browser-full` when you need a stable container, recordings, persistent profiles for sites that fight bots (banking, fintech), or remote/VNC access.
+
+## Install (Mac / Linux)
 
 Prerequisites: [Docker](https://www.docker.com/products/docker-desktop/).
 
-### Pull pre-built image
+```bash
+git clone https://github.com/otomata-tech/o-browser-full.git
+cd o-browser-full
+./install.sh
+```
+
+`install.sh` pulls the prebuilt image, drops a `~/.o-browser-full/docker-compose.yml`, links a small `o-browser` wrapper into `/usr/local/bin`, and starts the container.
+
+After install:
+
+```bash
+o-browser status                # health check
+o-browser logs                  # container logs
+o-browser stop                  # stop
+o-browser start                 # start (idempotent)
+```
+
+## Or run directly
 
 ```bash
 docker run -d --name browser \
-  -p 8080:8080 -p 6080:6080 -p 9222:9222 \
+  -p 127.0.0.1:8080:8080 -p 127.0.0.1:6080:6080 -p 127.0.0.1:9222:9223 \
   -v ./profiles:/app/profiles \
   -v ./recordings:/app/recordings \
   --shm-size=2g --security-opt seccomp=unconfined \
-  ghcr.io/otomata-tech/o-browser-server:latest
+  ghcr.io/otomata-tech/o-browser-full:latest
 ```
 
-### Build from source
+Or with `docker-compose`:
 
 ```bash
-git clone https://github.com/otomata-tech/o-browser-server.git
-cd o-browser-server
 docker compose up -d
 ```
 
-### Access
+## Access
 
 - Web UI : http://localhost:8080/
 - VNC viewer : http://localhost:8080/vnc/vnc.html?autoconnect=true
 - API : http://localhost:8080/api/
 - CDP : http://localhost:8080/cdp/
 
-To stop : `docker stop browser && docker rm browser` or `docker compose down`.
+Stop: `docker compose down` (or `docker stop browser && docker rm browser`).
 
 ## Auth
 
-No bearer-token auth by default. The container is intended to be reachable only from a trusted network. To restrict to loopback only, override the port bindings in `docker-compose.yml`:
-
-```yaml
-ports:
-  - "127.0.0.1:8080:8080"
-```
+No bearer-token auth. The container is meant to be reachable only from a trusted network — defaults bind to `127.0.0.1` only. If you put it behind a reverse proxy, add auth there.
 
 ## Features
 
-- Chrome headful in virtual display (Xvfb + x11vnc + noVNC)
-- CDP endpoint for Playwright/Puppeteer (`/cdp/*` proxied through nginx)
-- Session lifecycle API (start, stop, screenshot, list recordings)
-- Per-session recording: rrweb DOM + HAR + screencast.mp4 + screenshots/
+- Chrome headful in a virtual display (Xvfb + x11vnc + noVNC)
+- CDP endpoint for Playwright / Puppeteer (`/cdp/*` proxied through nginx)
+- Session lifecycle API: start, stop, screenshot, list recordings
+- Per-session recording: rrweb DOM + HAR + screencast.mp4 + named screenshots
+- Persistent Chrome profiles (cookies, login state) under `profiles/`
 
 ## API
 
@@ -71,7 +84,7 @@ curl -X POST http://localhost:8080/api/sessions \
   -H "Content-Type: application/json" \
   -d '{"profile":"default"}'
 
-# Current session (CDP URL inside the response)
+# Current session
 curl http://localhost:8080/api/sessions/current
 
 # End session
@@ -80,15 +93,16 @@ curl -X DELETE http://localhost:8080/api/sessions/current
 
 ## Profiles
 
-- `profiles/` — persistent Chrome profiles (volume-mounted, contain cookies/login state)
-- `profiles-seed/` — empty by default; drop profile templates here to seed `profiles/` on first use
+- `profiles/` — persistent Chrome profiles (volume-mounted, hold cookies / login state)
+- `profiles-seed/` — drop profile templates here to seed `profiles/` on first use
 
 ## Recording
 
-Each session writes to `recordings/<session_id>/` :
+Each session writes to `recordings/<session_id>/`:
+
 - `rrweb-events.json` — DOM replay events
 - `network.har` — HTTP traffic with bodies
-- `browser-state.jsonl` — cookies/storage snapshots
+- `browser-state.jsonl` — cookies / storage snapshots
 - `screencast.mp4` — X11 screencast
 - `screenshots/` — named screenshots taken via API
 
@@ -111,14 +125,14 @@ gcloud run deploy browser \
 ```
 
 Key flags:
-- `gen2` : full Linux kernel (needed for Chrome)
-- `no-cpu-throttling` : Chrome needs CPU even idle
-- `min-instances=1` : avoid cold starts (Xvfb/Chrome boot slow)
-- `session-affinity` : sticky VNC/CDP connections
-- `timeout=3600` : 1h sessions
+- `gen2` — full Linux kernel (Chrome)
+- `no-cpu-throttling` — Chrome needs CPU even idle
+- `min-instances=1` — avoid cold starts (Xvfb / Chrome boot slow)
+- `session-affinity` — sticky VNC / CDP connections
+- `timeout=3600` — 1 h sessions
 
-Profiles are ephemeral on Cloud Run (lost on scale-down). For persistence, mount a GCS Fuse volume or use a Compute VM instead.
+Profiles are ephemeral on Cloud Run (lost on scale-down). For persistence, mount a GCS Fuse volume or run on a Compute VM.
 
 ## Sister project
 
-Python client lib: [`o-browser`](https://github.com/otomata-tech/o-browser) — `BrowserClient` (local Chrome) and `RemoteBrowser` (connects to this server via CDP).
+[`o-browser`](https://github.com/otomata-tech/o-browser) — Python client lib (`BrowserClient` for local Chrome, `RemoteBrowser` for CDP-connecting to this server).

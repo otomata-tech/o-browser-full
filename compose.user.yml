@@ -1,0 +1,18 @@
+services:
+  browser:
+    image: ghcr.io/otomata-tech/o-browser-full:latest
+    container_name: browser
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"   # API + UI + nginx-proxied VNC/CDP
+      - "127.0.0.1:6080:6080"   # VNC WebSocket (direct)
+      - "127.0.0.1:9222:9223"   # CDP (socat relay; Chrome listens on localhost:9222)
+    environment:
+      - START_CHROME=false  # Chrome started by session API
+    volumes:
+      - ./recordings:/app/recordings
+      - ./sessions:/app/sessions
+      - ./profiles:/app/profiles
+    shm_size: 2g  # Required for Chrome
+    security_opt:
+      - seccomp:unconfined  # Required for Chrome
