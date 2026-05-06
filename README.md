@@ -6,15 +6,23 @@ Sister project of [`o-browser`](https://github.com/otomata-tech/o-browser), the 
 
 ## Install (Mac / Linux)
 
-Prerequisites: [Docker](https://www.docker.com/products/docker-desktop/).
+Prerequisites: [Docker](https://www.docker.com/products/docker-desktop/), Node 20+, git.
+
+**One-liner** (recommended):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/otomata-tech/o-browser-full/main/install.sh | bash
+```
+
+The script clones the repo into `~/.o-browser-full/source/`, drops a `~/.o-browser-full/docker-compose.yml`, symlinks `o-browser` into `/usr/local/bin` (sudo on Mac), pulls the prebuilt image, and starts the container.
+
+**Or from a local clone** (if you want the source on hand):
 
 ```bash
 git clone https://github.com/otomata-tech/o-browser-full.git
 cd o-browser-full
 ./install.sh
 ```
-
-`install.sh` pulls the prebuilt image, drops a `~/.o-browser-full/docker-compose.yml`, links a small `o-browser` wrapper into `/usr/local/bin`, and starts the container.
 
 After install:
 
