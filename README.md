@@ -16,6 +16,12 @@ curl -fsSL https://raw.githubusercontent.com/otomata-tech/o-browser-full/main/in
 
 The script clones the repo into `~/.o-browser-full/source/`, drops a `~/.o-browser-full/docker-compose.yml`, symlinks `o-browser` into `/usr/local/bin` (sudo on Mac), pulls the prebuilt image, and starts the container.
 
+No access to the ghcr image? Build it locally from the cloned source instead (a few minutes):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/otomata-tech/o-browser-full/main/install.sh | O_BROWSER_BUILD=1 bash
+```
+
 **Or from a local clone** (if you want the source on hand):
 
 ```bash

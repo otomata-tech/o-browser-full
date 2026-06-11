@@ -74,8 +74,15 @@ else
   sudo ln -sf "$REPO_DIR/bin/o-browser" "$TARGET"
 fi
 
-echo "==> Pulling image"
-( cd "$HOME_DIR" && docker compose pull )
+# O_BROWSER_BUILD=1 builds the image from the local source instead of pulling
+# from ghcr (which requires registry access).
+if [[ "${O_BROWSER_BUILD:-0}" == "1" ]]; then
+  echo "==> Building image from $REPO_DIR"
+  docker build -t ghcr.io/otomata-tech/o-browser-full:latest "$REPO_DIR"
+else
+  echo "==> Pulling image"
+  ( cd "$HOME_DIR" && docker compose pull )
+fi
 
 echo "==> Starting container"
 ( cd "$HOME_DIR" && docker compose up -d )
